@@ -1,4 +1,5 @@
-﻿using WebCarApp.Models;
+﻿using Microsoft.Extensions.Caching.Memory;
+using WebCarApp.Models;
 using WebCarApp.Models.Apis;
 
 namespace WebCarApp.Services
@@ -6,18 +7,33 @@ namespace WebCarApp.Services
     public class CarService : ICarService
     {
         private readonly HttpClient _http;
-
-        public CarService(HttpClient http)
+        private readonly IMemoryCache _cache;
+        private const string MAKES_KEY = "all_makes";
+        public CarService(HttpClient http,IMemoryCache cache)
         {
             _http = http;
+            _cache = cache;
         }
         public async Task<List<Make>> GetAllMakes()
         {
-       
-            var response = await _http.GetFromJsonAsync<ApiResponse<Make>>(
-            "https://vpic.nhtsa.dot.gov/api/vehicles/getallmakes?format=json");
+            if (_cache.TryGetValue(MAKES_KEY, out List<Make> cached))
+            {
+               
+                return cached;
+            }
+            try
+            {
+                var response = await _http.GetFromJsonAsync<ApiResponse<Make>>(
+           "https://vpic.nhtsa.dot.gov/api/vehicles/getallmakes?format=json");
+                _cache.Set(MAKES_KEY, response.Results, TimeSpan.FromHours(24));
 
-            return response?.Results ?? new List<Make>();
+                return response?.Results ?? new List<Make>();
+               
+            }
+            catch (Exception ex) {
+                return new List<Make>();
+            }
+           
             
         }
 
