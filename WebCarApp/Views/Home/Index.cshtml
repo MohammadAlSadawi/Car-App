@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Vehicle Explorer";
+    ViewData["Title"] = "Car Finder";
     Layout = null;
 }
 
@@ -8,7 +8,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vehicle Explorer</title>
+    <title>@ViewData["Title"]</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
@@ -281,9 +281,9 @@
     <nav class="navbar">
         <a class="nav-brand" href="/">
             <div class="nav-dot"></div>
-            Vehicle Explorer
+            @ViewData["Title"]
         </a>
-        <span class="nav-pill">NHTSA vPIC</span>
+    
     </nav>
 
     <main class="page">
@@ -291,7 +291,7 @@
         <div class="page-header">
             <div class="page-eyebrow">Vehicle lookup</div>
             <h1 class="page-title">Find models by make &amp; year</h1>
-            <p class="page-sub">Search across 10,000+ makes using the NHTSA database</p>
+            <p class="page-sub"></p>
         </div>
 
         <!-- Search card -->
@@ -355,7 +355,7 @@
         <div class="results" id="results">
 
             <div class="section-header">
-                <span class="section-title-label">Vehicle types</span>
+              @*   <span class="section-title-label">Vehicle types</span> *@
                 <span class="count-badge" id="typeCount">—</span>
             </div>
             <div class="types-grid" id="typesGrid"></div>
@@ -388,10 +388,10 @@
 
     <script>
         // State
-        let selectedMake = null;   // { Make_ID, Make_Name }
-        let allTypes     = [];     // loaded after make is selected
+        let selectedMake = null;   
+        let allTypes     = [];     
 
-        // Build year dropdown
+        //  dropdown
         (function () {
             const sel  = document.getElementById('yearSelect');
             const curr = new Date().getFullYear();
@@ -403,7 +403,7 @@
             sel.value = '2015';
         })();
 
-        // Debounced search input
+        // search input
         let debounceTimer;
         const makeInput  = document.getElementById('makeInput');
         const suggestBox = document.getElementById('suggestions');
@@ -434,7 +434,7 @@
             }
         });
 
-        // Call /Home/SearchMakes — server filters from cache
+        // SearchMakes
         async function fetchSuggestions(Make_Name) {
             if (Make_Name.length < 2) { closeSuggestions(); return; }
             try {
@@ -446,14 +446,14 @@
                     hits.map(m => `
                         <div class="sug-item" onclick="selectMake(${m.makeId},'${esc(m.makeName)}')">
                             <span class="sug-name">${esc(m.makeName)}</span>
-                            <span class="sug-id">ID ${m.makeId}</span>
+                           
                         </div>`).join('') +
                     `<div class="sug-footer">Showing ${hits.length} results</div>`;
 
                 suggestBox.classList.add('open');
             } catch { closeSuggestions(); }
         }
-
+         // <span class="sug-id">ID ${m.makeId}</span>
         function closeSuggestions() {
             suggestBox.classList.remove('open');
             suggestBox.innerHTML = '';
@@ -463,14 +463,14 @@
             if (!e.target.closest('.make-search-wrap')) closeSuggestions();
         });
 
-        // Select a make → load its vehicle types
+        //  vehicle types
         async function selectMake(Make_ID, Make_Name) {
             selectedMake = { Make_ID, Make_Name };
             makeInput.value = Make_Name;
             closeSuggestions();
 
             document.getElementById('selectedBarName').textContent = Make_Name;
-            document.getElementById('selectedBarId').textContent   = `ID: ${Make_ID}`;
+            // document.getElementById('selectedBarId').textContent   = `ID: ${Make_ID}`;
             document.getElementById('selectedBar').classList.add('visible');
             document.getElementById('searchBtn').disabled = false;
 
@@ -490,17 +490,17 @@
             hideError();
         }
 
-        // Call /Home/GetVehicleTypes
+        //GetVehicleTypes
         async function loadVehicleTypes(Make_ID) {
             const ts = document.getElementById('typeSelect');
             ts.disabled = true;
             ts.innerHTML = '<option value="">Loading types...</option>';
             try {
-                console.log('Loading vehicle types for Make_ID:', Make_ID);
+                
                 const res = await fetch(`/Home/GetVehicleTypes?makeId=${Make_ID}`);
-                console.log('Response status:', res.status);
+         
                 allTypes  = await res.json();
-                console.log('Loaded types:', allTypes);
+              
 
                 ts.innerHTML = '<option value="">All types</option>' +
                     allTypes.map(t =>
@@ -513,7 +513,7 @@
             }
         }
 
-        // Call /Home/GetModels
+        // GetModels
         async function doSearch() {
             if (!selectedMake) return;
             const year = document.getElementById('yearSelect').value;
@@ -536,11 +536,11 @@
             document.getElementById('results').classList.add('visible');
 
             // Type chips
-            document.getElementById('typeCount').textContent = allTypes.length + ' types';
-            document.getElementById('typesGrid').innerHTML = allTypes.map(t => `
-                <div class="type-chip" onclick="onTypeClick(this, '${t.vehicleTypeId}')">
-                    <div class="type-chip-name">${esc(t.vehicleTypeName)}</div>
-                </div>`).join('');
+            // document.getElementById('typeCount').textContent = allTypes.length + ' types';
+            // document.getElementById('typesGrid').innerHTML = allTypes.map(t => `
+            //     <div class="type-chip" onclick="onTypeClick(this, '${t.vehicleTypeId}')">
+            //         <div class="type-chip-name">${esc(t.vehicleTypeName)}</div>
+            //     </div>`).join('');
 
             renderModels(models, year);
         }
