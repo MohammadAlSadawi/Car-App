@@ -49,7 +49,7 @@ namespace WebCarApp.Services
         {
         
             var response = await _http.GetFromJsonAsync<ApiResponse<VehicleType>>(
-                ($"https://vpic.nhtsa.dot.gov/api/vehicles/GetVehicleTypesForMakeId/makeId/{makeId}?format=json"));
+                ($"https://vpic.nhtsa.dot.gov/api/vehicles/GetVehicleTypesForMakeId/{makeId}?format=json"));
 
             return response?.Results ?? new List<VehicleType>();
             

@@ -22,17 +22,17 @@ namespace WebCarApp.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> SearchMakes(string Make_name)
+        public async Task<IActionResult> SearchMakes(string Make_Name)
         {
-            if (string.IsNullOrWhiteSpace(Make_name) || Make_name.Length < 2)
+            if (string.IsNullOrWhiteSpace(Make_Name) || Make_Name.Length < 2)
                 return Json(new List<object>());
 
             var allMakes = await _carService.GetAllMakes();
 
             var results = allMakes
-                .Where(m => m.Make_Name.Contains(Make_name, StringComparison.OrdinalIgnoreCase))
+                .Where(m => m.Make_Name.Contains(Make_Name, StringComparison.OrdinalIgnoreCase))
                 .Take(20)
-                .Select(m => new { m.Make_ID, m.Make_Name })
+                .Select(m => new { makeId = m.Make_ID, makeName = m.Make_Name })
                 .ToList();
 
             return Json(results);
@@ -63,7 +63,7 @@ namespace WebCarApp.Controllers
 
             var result = models.Select(m => new
             {
-                m.Model_Name
+                modelName = m.Model_Name
             }).ToList();
 
             return Json(result);

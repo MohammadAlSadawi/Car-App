@@ -1,8 +1,601 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Vehicle Explorer";
+    Layout = null;
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vehicle Explorer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:       #0d0f12;
+            --bg2:      #13161b;
+            --bg3:      #1a1e25;
+            --border:   rgba(255,255,255,0.07);
+            --border2:  rgba(255,255,255,0.13);
+            --accent:   #4f8ef7;
+            --accent2:  #3a6fd8;
+            --text:     #e8eaf0;
+            --muted:    #7a8099;
+            --muted2:   #4a5068;
+            --tag-bg:   rgba(79,142,247,0.10);
+            --tag-text: #7eb3ff;
+            --radius:   10px;
+            --radius-lg:16px;
+        }
+
+        html, body {
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        /* Navbar */
+        .navbar {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(13,15,18,0.88);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 32px; height: 56px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .nav-brand {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 15px; font-weight: 600; letter-spacing: -.01em;
+            color: var(--text); text-decoration: none;
+        }
+        .nav-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+        .nav-pill {
+            font-size: 11px; font-family: 'DM Mono', monospace;
+            background: var(--tag-bg); color: var(--tag-text);
+            padding: 3px 10px; border-radius: 999px;
+            border: 1px solid rgba(79,142,247,0.2);
+        }
+
+        /* Layout */
+        .page { max-width: 920px; margin: 0 auto; padding: 48px 24px 80px; }
+
+        .page-header { margin-bottom: 40px; }
+        .page-eyebrow {
+            font-size: 11px; font-family: 'DM Mono', monospace;
+            color: var(--accent); letter-spacing: .1em;
+            text-transform: uppercase; margin-bottom: 10px;
+        }
+        .page-title {
+            font-size: 32px; font-weight: 600;
+            letter-spacing: -.02em; line-height: 1.15; margin-bottom: 8px;
+        }
+        .page-sub { font-size: 15px; color: var(--muted); }
+
+        /* Card */
+        .card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px; margin-bottom: 20px;
+        }
+        .field-label {
+            font-size: 11px; font-weight: 500;
+            letter-spacing: .06em; text-transform: uppercase;
+            color: var(--muted); margin-bottom: 8px;
+        }
+
+        /* Make search */
+        .make-search-wrap { position: relative; margin-bottom: 16px; }
+        .make-input {
+            width: 100%; height: 44px;
+            background: var(--bg3); border: 1px solid var(--border2);
+            border-radius: var(--radius);
+            padding: 0 44px 0 14px;
+            font-size: 14px; font-family: 'DM Sans', sans-serif;
+            color: var(--text); outline: none;
+            transition: border-color .15s;
+        }
+        .make-input::placeholder { color: var(--muted2); }
+        .make-input:focus { border-color: var(--accent); }
+        .search-icon-wrap {
+            position: absolute; right: 0; top: 0;
+            width: 44px; height: 44px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--muted); pointer-events: none;
+        }
+
+        /* Suggestions */
+        .suggestions {
+            display: none;
+            position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+            background: var(--bg2); border: 1px solid var(--border2);
+            border-radius: var(--radius); z-index: 50; overflow: hidden;
+        }
+        .suggestions.open { display: block; }
+        .sug-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 14px; font-size: 13px; cursor: pointer;
+            border-bottom: 1px solid var(--border); transition: background .1s;
+        }
+        .sug-item:last-child { border-bottom: none; }
+        .sug-item:hover, .sug-item.focused { background: var(--bg3); }
+        .sug-name { color: var(--text); font-weight: 500; }
+        .sug-id { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted2); }
+        .sug-footer {
+            padding: 7px 14px; font-size: 11px; color: var(--muted2);
+            background: var(--bg); border-top: 1px solid var(--border);
+        }
+
+        /* Selected make bar */
+        .selected-bar {
+            display: none; align-items: center; gap: 8px;
+            padding: 8px 12px; background: var(--tag-bg);
+            border: 1px solid rgba(79,142,247,0.2);
+            border-radius: var(--radius); margin-bottom: 16px; font-size: 13px;
+        }
+        .selected-bar.visible { display: flex; }
+        .selected-bar-name { font-weight: 500; color: var(--tag-text); }
+        .selected-bar-id { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+        .clear-btn {
+            margin-left: auto; background: none; border: none;
+            color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1;
+        }
+        .clear-btn:hover { color: var(--text); }
+
+        /* Selects row */
+        .selects-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+        .field-select {
+            width: 100%; height: 44px;
+            background: var(--bg3); border: 1px solid var(--border2);
+            border-radius: var(--radius); padding: 0 14px;
+            font-size: 14px; font-family: 'DM Sans', sans-serif;
+            color: var(--text); outline: none; cursor: pointer;
+            transition: border-color .15s;
+        }
+        .field-select:focus { border-color: var(--accent); }
+        .field-select:disabled { opacity: .4; cursor: not-allowed; }
+        .field-select option { background: var(--bg2); }
+
+        /* Search button */
+        .search-btn {
+            width: 100%; height: 44px;
+            background: var(--accent); color: #fff; border: none;
+            border-radius: var(--radius);
+            font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+            cursor: pointer; transition: background .15s, transform .1s;
+        }
+        .search-btn:hover:not(:disabled) { background: var(--accent2); }
+        .search-btn:active:not(:disabled) { transform: scale(0.99); }
+        .search-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+        /* Loading bar */
+        .loading-bar {
+            display: none; height: 3px;
+            background: var(--bg3); border-radius: 2px;
+            margin-top: 12px; overflow: hidden;
+        }
+        .loading-bar.active { display: block; }
+        .loading-fill {
+            height: 100%; width: 35%;
+            background: var(--accent); border-radius: 2px;
+            animation: barSlide 1.2s ease-in-out infinite;
+        }
+        @@keyframes barSlide {
+            0%   { transform: translateX(-120%); }
+            100% { transform: translateX(400%); }
+        }
+
+        /* Error */
+        .error-msg {
+            display: none; margin-top: 12px; padding: 11px 14px;
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.2);
+            border-radius: var(--radius); color: #f87171; font-size: 13px;
+        }
+        .error-msg.visible { display: block; }
+
+        /* Results */
+        .results { display: none; }
+        .results.visible { display: block; animation: fadeUp .3s ease; }
+        @@keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        .section-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 14px;
+        }
+        .section-title-label {
+            font-size: 11px; font-weight: 500; letter-spacing: .06em;
+            text-transform: uppercase; color: var(--muted);
+        }
+        .count-badge {
+            font-family: 'DM Mono', monospace; font-size: 11px;
+            background: var(--bg3); color: var(--muted);
+            border: 1px solid var(--border); padding: 2px 8px; border-radius: 999px;
+        }
+
+        /* Type chips */
+        .types-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+        .type-chip {
+            padding: 10px 16px;
+            background: var(--bg2); border: 1px solid var(--border);
+            border-radius: var(--radius); cursor: pointer;
+            transition: border-color .15s, background .15s;
+        }
+        .type-chip:hover { border-color: var(--border2); background: var(--bg3); }
+        .type-chip.active { border-color: var(--accent); background: var(--tag-bg); }
+        .type-chip-name { font-size: 13px; font-weight: 500; color: var(--text); }
+        .type-chip.active .type-chip-name { color: var(--tag-text); }
+
+        /* Models grid */
+        .models-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
+        }
+        .model-card {
+            background: var(--bg2); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 14px 16px;
+            transition: border-color .15s; animation: cardIn .25s ease both;
+        }
+        .model-card:hover { border-color: var(--border2); }
+        @@keyframes cardIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: none; }
+        }
+        .model-card-name { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+        .model-card-meta { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted2); }
+
+        /* Divider */
+        .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+        /* Empty state */
+        .empty-state { text-align: center; padding: 60px 24px; }
+        .empty-icon {
+            width: 44px; height: 44px; border: 1px solid var(--border2);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 14px; color: var(--muted2);
+        }
+        .empty-title { font-size: 15px; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
+        .empty-sub { font-size: 13px; color: var(--muted2); }
+
+        /* Responsive */
+        @@media (max-width: 520px) {
+            .selects-row { grid-template-columns: 1fr; }
+            .page-title  { font-size: 24px; }
+            .navbar      { padding: 0 16px; }
+            .page        { padding: 28px 16px 60px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a class="nav-brand" href="/">
+            <div class="nav-dot"></div>
+            Vehicle Explorer
+        </a>
+        <span class="nav-pill">NHTSA vPIC</span>
+    </nav>
+
+    <main class="page">
+
+        <div class="page-header">
+            <div class="page-eyebrow">Vehicle lookup</div>
+            <h1 class="page-title">Find models by make &amp; year</h1>
+            <p class="page-sub">Search across 10,000+ makes using the NHTSA database</p>
+        </div>
+
+        <!-- Search card -->
+        <div class="card">
+
+            <div class="field-label">Car make</div>
+            <div class="make-search-wrap">
+                <input type="text"
+                       id="makeInput"
+                       class="make-input"
+                       placeholder="Type a make name (e.g. Toyota, Ford, BMW...)"
+                       autocomplete="off"
+                       aria-label="Search car make" />
+                <div class="search-icon-wrap" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.2" />
+                        <path d="M10.5 10.5L13 13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div class="suggestions" id="suggestions"></div>
+            </div>
+
+            <!-- Selected make indicator -->
+            <div class="selected-bar" id="selectedBar">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="color:var(--accent);flex-shrink:0">
+                    <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.2" />
+                    <path d="M4.5 7l2 2 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="selected-bar-name" id="selectedBarName"></span>
+                <span class="selected-bar-id" id="selectedBarId"></span>
+                <button class="clear-btn" onclick="clearMake()" title="Clear">&#x2715;</button>
+            </div>
+
+            <!-- Year + Type -->
+            <div class="selects-row">
+                <div>
+                    <div class="field-label">Model year</div>
+                    <select class="field-select" id="yearSelect" aria-label="Select model year">
+                        <option value="">Select year</option>
+                    </select>
+                </div>
+                <div>
+                    <div class="field-label">Vehicle type</div>
+                    <select class="field-select" id="typeSelect" disabled aria-label="Select vehicle type">
+                        <option value="">Select make first</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="search-btn" id="searchBtn" onclick="doSearch()" disabled>
+                Search models
+            </button>
+
+            <div class="loading-bar" id="loadingBar">
+                <div class="loading-fill"></div>
+            </div>
+            <div class="error-msg" id="errorMsg"></div>
+        </div>
+
+        <!-- Results section -->
+        <div class="results" id="results">
+
+            <div class="section-header">
+                <span class="section-title-label">Vehicle types</span>
+                <span class="count-badge" id="typeCount">—</span>
+            </div>
+            <div class="types-grid" id="typesGrid"></div>
+
+            <hr class="divider" />
+
+            <div class="section-header">
+                <span class="section-title-label">Models</span>
+                <span class="count-badge" id="modelCount">—</span>
+            </div>
+            <div class="models-grid" id="modelsGrid"></div>
+
+        </div>
+
+        <!-- Empty state -->
+        <div class="empty-state" id="emptyState">
+            <div class="empty-icon">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <rect x="2" y="7" width="16" height="10" rx="3" stroke="currentColor" stroke-width="1.2" />
+                    <path d="M6 7V6a4 4 0 018 0v1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                    <circle cx="7.5" cy="12" r="1" fill="currentColor" />
+                    <circle cx="12.5" cy="12" r="1" fill="currentColor" />
+                </svg>
+            </div>
+            <div class="empty-title">No results yet</div>
+            <div class="empty-sub">Search for a make and year to see available models</div>
+        </div>
+
+    </main>
+
+    <script>
+        // State
+        let selectedMake = null;   // { Make_ID, Make_Name }
+        let allTypes     = [];     // loaded after make is selected
+
+        // Build year dropdown
+        (function () {
+            const sel  = document.getElementById('yearSelect');
+            const curr = new Date().getFullYear();
+            for (let y = curr; y >= 1995; y--) {
+                const o = document.createElement('option');
+                o.value = y; o.textContent = y;
+                sel.appendChild(o);
+            }
+            sel.value = '2015';
+        })();
+
+        // Debounced search input
+        let debounceTimer;
+        const makeInput  = document.getElementById('makeInput');
+        const suggestBox = document.getElementById('suggestions');
+
+        makeInput.addEventListener('input', function () {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => fetchSuggestions(this.value.trim()), 280);
+        });
+
+        makeInput.addEventListener('keydown', function (e) {
+            const items   = suggestBox.querySelectorAll('.sug-item');
+            const focused = suggestBox.querySelector('.sug-item.focused');
+            const idx     = Array.from(items).indexOf(focused);
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                focused && focused.classList.remove('focused');
+                if (idx < items.length - 1) items[idx + 1].classList.add('focused');
+                else items[0] && items[0].classList.add('focused');
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                focused && focused.classList.remove('focused');
+                if (idx > 0) items[idx - 1].classList.add('focused');
+            } else if (e.key === 'Enter' && focused) {
+                e.preventDefault(); focused.click();
+            } else if (e.key === 'Escape') {
+                closeSuggestions();
+            }
+        });
+
+        // Call /Home/SearchMakes — server filters from cache
+        async function fetchSuggestions(Make_Name) {
+            if (Make_Name.length < 2) { closeSuggestions(); return; }
+            try {
+                const res  = await fetch(`/Home/SearchMakes?Make_Name=${encodeURIComponent(Make_Name)}`);
+                const hits = await res.json();
+                if (!hits.length) { closeSuggestions(); return; }
+
+                suggestBox.innerHTML =
+                    hits.map(m => `
+                        <div class="sug-item" onclick="selectMake(${m.makeId},'${esc(m.makeName)}')">
+                            <span class="sug-name">${esc(m.makeName)}</span>
+                            <span class="sug-id">ID ${m.makeId}</span>
+                        </div>`).join('') +
+                    `<div class="sug-footer">Showing ${hits.length} results</div>`;
+
+                suggestBox.classList.add('open');
+            } catch { closeSuggestions(); }
+        }
+
+        function closeSuggestions() {
+            suggestBox.classList.remove('open');
+            suggestBox.innerHTML = '';
+        }
+
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.make-search-wrap')) closeSuggestions();
+        });
+
+        // Select a make → load its vehicle types
+        async function selectMake(Make_ID, Make_Name) {
+            selectedMake = { Make_ID, Make_Name };
+            makeInput.value = Make_Name;
+            closeSuggestions();
+
+            document.getElementById('selectedBarName').textContent = Make_Name;
+            document.getElementById('selectedBarId').textContent   = `ID: ${Make_ID}`;
+            document.getElementById('selectedBar').classList.add('visible');
+            document.getElementById('searchBtn').disabled = false;
+
+            await loadVehicleTypes(Make_ID);
+        }
+
+        function clearMake() {
+            selectedMake = null; allTypes = [];
+            makeInput.value = '';
+            document.getElementById('selectedBar').classList.remove('visible');
+            document.getElementById('searchBtn').disabled = true;
+            const ts = document.getElementById('typeSelect');
+            ts.disabled = true;
+            ts.innerHTML = '<option value="">Select make first</option>';
+            document.getElementById('results').classList.remove('visible');
+            document.getElementById('emptyState').style.display = '';
+            hideError();
+        }
+
+        // Call /Home/GetVehicleTypes
+        async function loadVehicleTypes(Make_ID) {
+            const ts = document.getElementById('typeSelect');
+            ts.disabled = true;
+            ts.innerHTML = '<option value="">Loading types...</option>';
+            try {
+                console.log('Loading vehicle types for Make_ID:', Make_ID);
+                const res = await fetch(`/Home/GetVehicleTypes?makeId=${Make_ID}`);
+                console.log('Response status:', res.status);
+                allTypes  = await res.json();
+                console.log('Loaded types:', allTypes);
+
+                ts.innerHTML = '<option value="">All types</option>' +
+                    allTypes.map(t =>
+                        `<option value="${t.vehicleTypeId}">${esc(t.vehicleTypeName)}</option>`
+                    ).join('');
+                ts.disabled = false;
+            } catch (error) {
+                console.error('Error loading types:', error);
+                ts.innerHTML = '<option value="">Failed to load types</option>';
+            }
+        }
+
+        // Call /Home/GetModels
+        async function doSearch() {
+            if (!selectedMake) return;
+            const year = document.getElementById('yearSelect').value;
+            if (!year) { showError('Please select a model year.'); return; }
+
+            setLoading(true); hideError();
+            try {
+                const res    = await fetch(`/Home/GetModels?makeId=${selectedMake.Make_ID}&year=${year}`);
+                const models = await res.json();
+                renderResults(models, year);
+            } catch {
+                showError('Failed to load models. Please try again.');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function renderResults(models, year) {
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('results').classList.add('visible');
+
+            // Type chips
+            document.getElementById('typeCount').textContent = allTypes.length + ' types';
+            document.getElementById('typesGrid').innerHTML = allTypes.map(t => `
+                <div class="type-chip" onclick="onTypeClick(this, '${t.vehicleTypeId}')">
+                    <div class="type-chip-name">${esc(t.vehicleTypeName)}</div>
+                </div>`).join('');
+
+            renderModels(models, year);
+        }
+
+        function renderModels(models, year) {
+            document.getElementById('modelCount').textContent = models.length + ' models';
+
+            if (!models.length) {
+                document.getElementById('modelsGrid').innerHTML =
+                    `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted2);font-size:13px;">
+                        No models found for the selected criteria
+                     </div>`;
+                return;
+            }
+
+            document.getElementById('modelsGrid').innerHTML = models.map((m, i) => `
+                <div class="model-card" style="animation-delay:${Math.min(i * 0.025, 0.5)}s">
+                    <div class="model-card-name">${esc(m.modelName)}</div>
+                    <div class="model-card-meta">${esc(selectedMake.Make_Name)} &middot; ${year}</div>
+                </div>`).join('');
+        }
+
+        async function onTypeClick(chipEl, typeId) {
+            document.querySelectorAll('.type-chip').forEach(c => c.classList.remove('active'));
+            chipEl.classList.add('active');
+            const year = document.getElementById('yearSelect').value;
+            setLoading(true);
+            try {
+                const res    = await fetch(`/Home/GetModels?makeId=${selectedMake.Make_ID}&year=${year}`);
+                const models = await res.json();
+                renderModels(models, year);
+            } catch {
+                showError('Failed to filter models.');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Helpers
+        function setLoading(on) {
+            document.getElementById('loadingBar').classList.toggle('active', on);
+            document.getElementById('searchBtn').disabled = on;
+        }
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg; el.classList.add('visible');
+        }
+        function hideError() {
+            document.getElementById('errorMsg').classList.remove('visible');
+        }
+        function esc(str) {
+            return String(str ?? '')
+                .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+    </script>
+</body>
+</html>
