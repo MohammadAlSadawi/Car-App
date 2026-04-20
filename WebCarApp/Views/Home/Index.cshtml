@@ -274,6 +274,45 @@
             .navbar      { padding: 0 16px; }
             .page        { padding: 28px 16px 60px; }
         }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 24px;
+            flex-wrap: wrap;
+        }
+
+        .page-btn {
+            min-width: 36px;
+            height: 36px;
+            padding: 0 10px;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text);
+            font-size: 13px;
+            font-family: 'DM Mono', monospace;
+            cursor: pointer;
+            transition: all .15s ease;
+        }
+
+            .page-btn:hover:not(:disabled) {
+                border-color: var(--border2);
+                background: var(--bg3);
+            }
+
+            .page-btn.active {
+                border-color: var(--accent);
+                background: var(--tag-bg);
+                color: var(--tag-text);
+            }
+
+            .page-btn:disabled {
+                opacity: 0.35;
+                cursor: not-allowed;
+            }
     </style>
 </head>
 <body>
@@ -367,6 +406,7 @@
                 <span class="count-badge" id="modelCount">—</span>
             </div>
             <div class="models-grid" id="modelsGrid"></div>
+            <div id="pagination" style="display:flex;gap:8px;justify-content:center;margin-top:20px;"></div>
 
         </div>
 
@@ -389,8 +429,10 @@
     <script>
         // State
         let selectedMake = null;   
-        let allTypes     = [];     
-
+        let allTypes     = [];
+        let allModels = [];
+        let currentPage = 1;
+        const pageSize = 12;
         //  dropdown
         (function () {
             const sel  = document.getElementById('yearSelect');
@@ -522,28 +564,87 @@
             setLoading(true); hideError();
             try {
                 const res    = await fetch(`/Home/GetModels?makeId=${selectedMake.Make_ID}&year=${year}`);
-                const models = await res.json();
-                renderResults(models, year);
+               allModels = await res.json();
+                currentPage = 1;
+                renderPage();
+               // renderResults(models, year);
             } catch {
                 showError('Failed to load models. Please try again.');
             } finally {
                 setLoading(false);
             }
         }
+        function renderPage() {
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
 
-        function renderResults(models, year) {
+            const pageItems = allModels.slice(start, end);
+
+            renderResults(pageItems);
+            renderPagination();
+        }
+        function renderResults(models) {
             document.getElementById('emptyState').style.display = 'none';
             document.getElementById('results').classList.add('visible');
 
-            // Type chips
-            // document.getElementById('typeCount').textContent = allTypes.length + ' types';
-            // document.getElementById('typesGrid').innerHTML = allTypes.map(t => `
-            //     <div class="type-chip" onclick="onTypeClick(this, '${t.vehicleTypeId}')">
-            //         <div class="type-chip-name">${esc(t.vehicleTypeName)}</div>
-            //     </div>`).join('');
-
-            renderModels(models, year);
+             renderModels(models, document.getElementById('yearSelect').value);
         }
+
+        function renderPagination() {
+            const container = document.getElementById('pagination');
+            container.innerHTML = '';
+            container.className = 'pagination';
+
+            const totalPages = Math.ceil(allModels.length / pageSize);
+            if (totalPages <= 1) return;
+
+            // Prev
+            container.innerHTML += `
+                <button class="page-btn"
+                    onclick="changePage(${currentPage - 1})"
+                    ${currentPage === 1 ? 'disabled' : ''}>
+                    ‹
+                </button>
+            `;
+
+            // Pages (with limit for clean UI)
+            const maxVisible = 5;
+            let start = Math.max(1, currentPage - 2);
+            let end = Math.min(totalPages, start + maxVisible - 1);
+
+            if (end - start < maxVisible - 1) {
+                start = Math.max(1, end - maxVisible + 1);
+            }
+
+            for (let i = start; i <= end; i++) {
+                container.innerHTML += `
+                    <button class="page-btn ${i === currentPage ? 'active' : ''}"
+                        onclick="changePage(${i})">
+                        ${i}
+                    </button>
+                `;
+            }
+
+            // Next
+            container.innerHTML += `
+                <button class="page-btn"
+                    onclick="changePage(${currentPage + 1})"
+                    ${currentPage === totalPages ? 'disabled' : ''}>
+                    ›
+                </button>
+            `;
+        }
+
+         function changePage(page) {
+            const totalPages = Math.ceil(allModels.length / pageSize);
+
+            if (page < 1 || page > totalPages) return;
+
+            currentPage = page;
+            renderPage();
+        }
+
+       
 
         function renderModels(models, year) {
             document.getElementById('modelCount').textContent = models.length + ' models';
