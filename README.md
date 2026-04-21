@@ -51,6 +51,7 @@ The application is deployed using AWS Elastic Beanstalk (Free Tier).
 Platform: .NET
 Instance Type: t3.micro
 Deployment Type: ZIP upload
+
 Note:
 The app can be deployed using Docker as well, but for simplicity it is hosted directly on AWS Elastic Beanstalk.
 
