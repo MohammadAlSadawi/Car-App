@@ -9,24 +9,39 @@ The application provides a user-friendly interface to search for vehicles and vi
 -https://github.com/MohammadAlSadawi/Car-App
 
 *Features:
+
 -Select car make from a dynamic list
+
 -Filter by manufacturing year
+
 -Retrieve vehicle types based on selected make
+
 -Display available models for selected criteria
+
 -AJAX-based dynamic UI (no full page reloads)
+
 -Basic performance optimizations (limited results, parallel API calls)
 
 *Technologies Used:
+
 -ASP.NET Core MVC (.NET 8)
+
 -C#
+
 -Bootstrap
+
 -AJAX
+
 -Docker
+
 -AWS Elastic Beanstalk
 
 *APIs Used:NHTSA Vehicle API(Public)
+
 -Get All Makes
+
 -Get Vehicle Types by Make
+
 -Get Models by Make & Year
 
 * Docker
@@ -49,7 +64,9 @@ http://localhost:8080
 The application is deployed using AWS Elastic Beanstalk (Free Tier).
 
 -Platform: .NET
+
 -Instance Type: t3.micro
+
 -Deployment Type: ZIP upload
 
 Note:
